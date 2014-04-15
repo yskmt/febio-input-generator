@@ -1,4 +1,5 @@
-from input_gen import generate_febio_input
+import input_gen
+reload(input_gen)
 from subprocess import call
 import os.path
 
@@ -31,17 +32,27 @@ sliding_penalty = 10
 id = 1
 msh_file = "cell.msh"
 
+
+
+#### simulation specifications
+Cell_line = febio_edge('Cell_line', 6)
+Cell_line.fix_disp = ('xz')
+Inde_line = febio_edge('Inde_line', 206)
+febio_edges = [Cell_line, Inde_line]
+
+
 print "writing simulation {0:d}".format(id)
 print "{0:s}/cell_{0:s}_{1:d}.feb".format(sim_name,id)
-generate_febio_input(msh_file, id, sim_name, name, \
-                     indent_1, indent_2, \
-                     time_steps, min_dtmax,\
-                     phi0, density, \
-                     c1, c2, k, \
-                     ksi, beta, \
-                     g1, t1, \
-                     perm, \
-                     sliding_penalty\
+input_gen.generate_febio_input(msh_file, id, sim_name, name, \
+                               febio_edges, 
+                               indent_1, indent_2, \
+                               time_steps, min_dtmax,\
+                               phi0, density, \
+                               c1, c2, k, \
+                               ksi, beta, \
+                               g1, t1, \
+                               perm, \
+                               sliding_penalty\
 )
 
 #### Run the simulation

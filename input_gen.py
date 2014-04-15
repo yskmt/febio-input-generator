@@ -2,8 +2,30 @@ from subprocess import call
 from lxml import etree
 import numpy as np
 
+class febio_part:
+    name = ''
+    number = 0
+
+class febio_face:
+    name = ''
+    number = 0
+
+class febio_edge:
+    def __init__(self, _name, _number):
+        self.name = _name
+        self.number = _number
+    name = ''
+    number = 0
+    elems = []
+    fix_disp = None
+
+class febio_node:
+    name = ''
+    number = 0
+
 ##### simulation
 def generate_febio_input( msh_file, id, sim_name, name, \
+                          febio_edges,
                           indent_1, indent_2, \
                           time_steps, min_dtmax,\
                           phi0, density, \
@@ -32,9 +54,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     elem_end = -1
 
     Nodes = []
-    Cell_line = []
     Cell_tet4 = []
-    Cell_axis_nodes = []
     Cell_bottom_nodes = []
     Cell_bottom_tri3 = []
     Cell_top_tri3 = []
@@ -43,9 +63,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
 
     Symm_tri3 = []
 
-    Inde_line = []
     Inde_tet4 = []
-    Inde_axis_nodes = []
     Inde_top_tri3 = []
     Inde_bottom_tri3 = []
     Inde_front_tri3 = []
@@ -53,6 +71,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
 
     Cell_front_nodes = []
     Inde_front_nodes = []
+
 
     for i in range(len_file):
         # get number of nodes
@@ -93,10 +112,9 @@ def generate_febio_input( msh_file, id, sim_name, name, \
             if elem_info[1] == 1:
                 elem_info.append(int(elem_list[5]))
                 elem_info.append(int(elem_list[6]))
-                if (elem_info[3]==6):
-                    Cell_line.append(elem_info)
-                elif (elem_info[3]==206):
-                    Inde_line.append(elem_info)
+                for ed in range(len(febio_edges)):
+                    if elem_info[3]==febio_edges[ed].number:
+                        febio_edges[ed].elems.append(elem_info)
 
             # tet4 elements
             if (elem_info[1] == 4):
@@ -145,21 +163,36 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                 elif (elem_info[3]==203):
                     Inde_bottom_tri3.append(elem_info)
 
-    # collect and order the cell axis nodes
-    for i in range(len(Cell_line)):
-        Cell_axis_nodes.append(Cell_line[i][5])
-        Cell_axis_nodes.append(Cell_line[i][6])
-    # remove duplicates and sort
-    Cell_axis_nodes=list(set(Cell_axis_nodes))
-    Cell_axis_nodes.sort()
 
-    # collect and order the indenter axis nodes
-    for i in range(len(Inde_line)):
-        Inde_axis_nodes.append(Inde_line[i][5])
-        Inde_axis_nodes.append(Inde_line[i][6])
-    # remove duplicates and sort
-    Inde_axis_nodes=list(set(Inde_axis_nodes))
-    Inde_axis_nodes.sort()
+    # Collect the cell axis nodes for fixed displacement condition
+    for ed in range(len(febio_edges)):
+        if febio_edges[ed].fix_disp != None:
+            # Add fix_disp_nodes member
+            febio_edges[ed].fix_disp_nodes = []
+
+            # collect and order the cell axis nodes
+            for i in range(len(febio_edges[ed].elems)):
+                febio_edges[ed].fix_disp_nodes.append(febio_edges[ed].elems[i][5])
+                febio_edges[ed].fix_disp_nodes.append(febio_edges[ed].elems[i][6])
+            # remove duplicates and sort
+            febio_edges[ed].fix_disp_nodes=list(set(febio_edges[ed].fix_disp_nodes))
+            febio_edges[ed].fix_disp_nodes.sort()            
+
+    # # collect and order the cell axis nodes
+    # for i in range(len(Cell_line)):
+    #     Cell_axis_nodes.append(Cell_line[i][5])
+    #     Cell_axis_nodes.append(Cell_line[i][6])
+    # # remove duplicates and sort
+    # Cell_axis_nodes=list(set(Cell_axis_nodes))
+    # Cell_axis_nodes.sort()
+
+    # # collect and order the indenter axis nodes
+    # for i in range(len(Inde_line)):
+    #     Inde_axis_nodes.append(Inde_line[i][5])
+    #     Inde_axis_nodes.append(Inde_line[i][6])
+    # # remove duplicates and sort
+    # Inde_axis_nodes=list(set(Inde_axis_nodes))
+    # Inde_axis_nodes.sort()
 
     # get nodes on cell yx-plane (front) for axisymmetric constraints
     for i in range(len(Cell_front_tri3)):
@@ -315,10 +348,15 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     for i in range(len(Cell_front_nodes)):
         etree.SubElement(fix_xml, "node", id="{0:d}".format(Cell_front_nodes[i]), bc="z")
 
-    ## fixed boundary on y-axis of cell (axis of symmetry)
-    fix_xml = etree.SubElement(Boundary_xml, "fix")
-    for i in range(len(Cell_axis_nodes)):
-        etree.SubElement(fix_xml, "node", id="{0:d}".format(Cell_axis_nodes[i]), bc="xz")
+    ## fixed displacement for edge element
+    for ed in range(len(febio_edges)):
+        if febio_edges[ed].fix_disp != None:
+            ## fixed boundary on y-axis of cell (axis of symmetry)
+            fix_xml = etree.SubElement(Boundary_xml, "fix")
+            for i in range(len(febio_edges[ed].fix_disp_nodes)):
+                etree.SubElement(fix_xml, "node", \
+                                 id="{0:d}".format(febio_edges[ed].fix_disp_nodes[i]), \
+                                 bc=febio_edges[ed].fix_disp)
 
     ## fixed boundary on the bottom of cell
     fix_xml = etree.SubElement(Boundary_xml, "fix")
