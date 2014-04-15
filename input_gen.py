@@ -5,7 +5,7 @@ import pdb
 
 ##### simulation
 def generate_febio_input( msh_file, id, sim_name, name, \
-                          febio_edges, febio_parts, \
+                          febio_edges, febio_parts, febio_faces, \
                           indent_1, indent_2, \
                           time_steps, min_dtmax,\
                           phi0, density, \
@@ -109,6 +109,10 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                 elem_info.append(int(elem_list[5]))
                 elem_info.append(int(elem_list[6]))
                 elem_info.append(int(elem_list[7]))
+                for fc in range(len(febio_faces)):
+                    if elem_info[3]==febio_faces[fc].number:
+                        febio_faces[fc].elems.append(elem_info)
+                        
                 # symmetry plane
                 if (elem_info[3] == 101):
                     Symm_tri3.append(elem_info)
@@ -145,13 +149,28 @@ def generate_febio_input( msh_file, id, sim_name, name, \
             # Add fix_disp_nodes member
             febio_edges[ed].fix_disp_nodes = []
 
-            # collect and order the cell axis nodes
+            # collect and order the edge fixed nodes
             for i in range(len(febio_edges[ed].elems)):
                 febio_edges[ed].fix_disp_nodes.append(febio_edges[ed].elems[i][5])
                 febio_edges[ed].fix_disp_nodes.append(febio_edges[ed].elems[i][6])
             # remove duplicates and sort
             febio_edges[ed].fix_disp_nodes=list(set(febio_edges[ed].fix_disp_nodes))
             febio_edges[ed].fix_disp_nodes.sort()            
+
+    # Collect the face nodes for fixed displacement condition
+    for fc in range(len(febio_faces)):
+        if febio_faces[fc].fix_disp != None:
+            # Add fix_disp_nodes member
+            febio_faces[fc].fix_disp_nodes = []
+            
+            # collect and order the face fixed nodes
+            for i in range(len(febio_faces[fc].elems)):
+                febio_faces[fc].fix_disp_nodes.append(febio_faces[fc].elems[i][5])
+                febio_faces[fc].fix_disp_nodes.append(febio_faces[fc].elems[i][6])
+                febio_faces[fc].fix_disp_nodes.append(febio_faces[fc].elems[i][7])
+            # remove duplicates and sort
+            febio_faces[fc].fix_disp_nodes=list(set(febio_faces[fc].fix_disp_nodes))
+            febio_faces[fc].fix_disp_nodes.sort()
 
     # get nodes on cell yx-plane (front) for axisymmetric constraints
     for i in range(len(Cell_front_tri3)):
@@ -264,8 +283,6 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     Elements_xml = etree.SubElement(Geometry_xml, "Elements")
     elem_id = 0
 
-    pdb.set_trace()
-
     ### Parts
     for pt in range(len(febio_parts)):
         for i in range(len(febio_parts[pt].elems)):
@@ -299,26 +316,23 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     # Boundary
     Boundary_xml = etree.SubElement(root, "Boundary")
     
-    ## fixed boundary on yx-plane (cell)
-    fix_xml = etree.SubElement(Boundary_xml, "fix")
-    for i in range(len(Cell_front_nodes)):
-        etree.SubElement(fix_xml, "node", id="{0:d}".format(Cell_front_nodes[i]), bc="z")
+    ## fixed displacement for face element
+    for fc in range(len(febio_faces)):
+        if febio_faces[fc].fix_disp != None:
+            fix_xml = etree.SubElement(Boundary_xml, "fix")
+            for i in range(len(febio_faces[fc].fix_disp_nodes)):
+                etree.SubElement(fix_xml, "node",
+                                 id="{0:d}".format(febio_faces[fc].fix_disp_nodes[i]),
+                                 bc=febio_faces[fc].fix_disp)
 
     ## fixed displacement for edge element
     for ed in range(len(febio_edges)):
         if febio_edges[ed].fix_disp != None:
-            ## fixed boundary on y-axis of cell (axis of symmetry)
             fix_xml = etree.SubElement(Boundary_xml, "fix")
             for i in range(len(febio_edges[ed].fix_disp_nodes)):
                 etree.SubElement(fix_xml, "node", \
                                  id="{0:d}".format(febio_edges[ed].fix_disp_nodes[i]), \
                                  bc=febio_edges[ed].fix_disp)
-
-    ## fixed boundary on the bottom of cell
-    fix_xml = etree.SubElement(Boundary_xml, "fix")
-    for i in range(len(Cell_bottom_nodes)):
-        etree.SubElement(fix_xml, "node", id="{0:d}".format(Cell_bottom_nodes[i]), bc="y")
-
 
     ## contact boundary: cell-indenter
     contact_xml = etree.SubElement(Boundary_xml, "contact", type="facet-to-facet sliding")

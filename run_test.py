@@ -9,11 +9,14 @@ class febio_part:
         self.name = _name
         self.number = _number
         self.elems = []
+        self.fix_disp = None
 
 class febio_face:
     def __init__(self, _name, _number):
         self.name = _name
         self.number = _number
+        self.elems = []
+        self.fix_disp = None
 
 class febio_edge:
     def __init__(self, _name, _number):
@@ -76,10 +79,26 @@ Inde_tet4.elem_type = 'tet4'
 Inde_tet4.mat = 2
 febio_parts = [Cell_tet4, Inde_tet4]
 
+### Faces
+Symm_tri3 = febio_face('Symm_tri3', 101)
+Cell_front_tri3 = febio_face('Cell_front_tri3', 4)
+Cell_front_tri3.fix_disp = 'z'
+Cell_back_tri3 = febio_face('Cell_back_tri3', 5)
+Cell_top_tri3 = febio_face('Cell_top_tri3', 2)
+Cell_bottom_tri3 = febio_face('Cell_bottom_tri3',3)
+Cell_bottom_tri3.fix_disp = 'y'
+Inde_front_tri3 = febio_face('Inde_front_tri3', 204)
+Inde_front_tri3.fix_disp = 'z'
+Inde_back_tri3 = febio_face('Inde_back_tri3', 205)
+Inde_top_tri3 = febio_face('Inde_top_tri3', 202)
+Inde_bottom_tri3 = febio_face('Inde_bottom_tri3', 203)
+
+febio_faces = [Symm_tri3, Cell_front_tri3, Cell_back_tri3, Cell_top_tri3, Cell_bottom_tri3, Inde_front_tri3, Inde_back_tri3, Inde_top_tri3, Inde_bottom_tri3]
+
 print "writing simulation {0:d}".format(id)
 print "{0:s}/cell_{0:s}_{1:d}.feb".format(sim_name,id)
 input_gen.generate_febio_input(msh_file, id, sim_name, name, \
-                               febio_edges, febio_parts,
+                               febio_edges, febio_parts, febio_faces,
                                indent_1, indent_2, \
                                time_steps, min_dtmax,\
                                phi0, density, \
