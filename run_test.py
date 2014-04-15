@@ -90,14 +90,23 @@ Symm_tri3.thickness = '0,0,0'
 Cell_front_tri3 = febio_face('Cell_front_tri3', 4)
 Cell_front_tri3.fix_disp = 'z'
 Cell_back_tri3 = febio_face('Cell_back_tri3', 5)
+
 Cell_top_tri3 = febio_face('Cell_top_tri3', 2)
+Cell_top_tri3.elem_type = 'tri3'
+
 Cell_bottom_tri3 = febio_face('Cell_bottom_tri3',3)
+
 Cell_bottom_tri3.fix_disp = 'y'
 Inde_front_tri3 = febio_face('Inde_front_tri3', 204)
 Inde_front_tri3.fix_disp = 'z'
 Inde_back_tri3 = febio_face('Inde_back_tri3', 205)
+
 Inde_top_tri3 = febio_face('Inde_top_tri3', 202)
+
 Inde_bottom_tri3 = febio_face('Inde_bottom_tri3', 203)
+Inde_bottom_tri3.elem_type = 'tri3'
+Inde_bottom_tri3.slave = [2]
+
 
 febio_faces = [Symm_tri3, Cell_front_tri3, Cell_back_tri3, Cell_top_tri3, Cell_bottom_tri3, Inde_front_tri3, Inde_back_tri3, Inde_top_tri3, Inde_bottom_tri3]
 

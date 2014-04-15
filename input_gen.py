@@ -320,25 +320,60 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                                  id="{0:d}".format(febio_edges[ed].fix_disp_nodes[i]), \
                                  bc=febio_edges[ed].fix_disp)
 
-    ## contact boundary: cell-indenter
-    contact_xml = etree.SubElement(Boundary_xml, "contact", type="facet-to-facet sliding")
-    etree.SubElement(contact_xml, "laugon").text = "0"
-    etree.SubElement(contact_xml, "tolerance").text = "0.2"
-    etree.SubElement(contact_xml, "penalty").text = "{0:e}".format(sliding_penalty)
-    etree.SubElement(contact_xml, "two_pass").text = "0"
-    etree.SubElement(contact_xml, "auto_penalty").text = "1"
-    etree.SubElement(contact_xml, "fric_coeff").text = "0"
-    etree.SubElement(contact_xml, "fric_penalty").text = "0"
-    etree.SubElement(contact_xml, "search_tol").text = "0.01"
-    # etree.SubElement(contact_xml, "symmetric_stiffness").text = "0"
-    # etree.SubElement(contact_xml, "search_radius").text = "1"
-    # etree.SubElement(contact_xml, "tension").text = "1"
-    etree.SubElement(contact_xml, "minaug").text = "0"
-    etree.SubElement(contact_xml, "maxaug").text = "10"
-    etree.SubElement(contact_xml, "gaptol").text = "0"
-    etree.SubElement(contact_xml, "seg_up").text = "0"
+    ## Contact Boundary 
+    for fc in range(len(febio_faces)):
+        if hasattr(febio_faces[fc], 'slave'):
 
-    ### contact master surface
+            ## contact boundary attributes
+            contact_xml = etree.SubElement(Boundary_xml, "contact", type="facet-to-facet sliding")
+            etree.SubElement(contact_xml, "laugon").text = "0"
+            etree.SubElement(contact_xml, "tolerance").text = "0.2"
+            etree.SubElement(contact_xml, "penalty").text = "{0:e}".format(sliding_penalty)
+            etree.SubElement(contact_xml, "two_pass").text = "0"
+            etree.SubElement(contact_xml, "auto_penalty").text = "1"
+            etree.SubElement(contact_xml, "fric_coeff").text = "0"
+            etree.SubElement(contact_xml, "fric_penalty").text = "0"
+            etree.SubElement(contact_xml, "search_tol").text = "0.01"
+            # etree.SubElement(contact_xml, "symmetric_stiffness").text = "0"
+            # etree.SubElement(contact_xml, "search_radius").text = "1"
+            # etree.SubElement(contact_xml, "tension").text = "1"
+            etree.SubElement(contact_xml, "minaug").text = "0"
+            etree.SubElement(contact_xml, "maxaug").text = "10"
+            etree.SubElement(contact_xml, "gaptol").text = "0"
+            etree.SubElement(contact_xml, "seg_up").text = "0"
+
+            # get slave faces
+            slave = febio_faces[fc].slave
+            
+            ### contact master surface
+            surface_xml = etree.SubElement(contact_xml, "surface", type="master")
+            for i in range(len(febio_faces[fc].elems)):
+                etree.SubElement(surface_xml,
+                                 febio_faces[fc].elem_type,
+                                 id="{0:d}".format(i+1)).text \
+                    = "{0:d}, {1:d}, {2:d}"\
+                        .format(febio_faces[fc].elems[i][5],
+                                febio_faces[fc].elems[i][6],
+                                febio_faces[fc].elems[i][7])
+
+            ### contact slave surface
+            surface_xml = etree.SubElement(contact_xml, "surface", type="slave")
+            for sn in range(len(slave)):
+                # get the index of the slave face
+                for i in range(len(febio_faces)):
+                    if febio_faces[i].number==slave[sn]:
+                        fc_sl = i
+                
+                for i in range(len(febio_faces[fc_sl].elems)):
+                    etree.SubElement(surface_xml,
+                                     febio_faces[fc_sl].elem_type,
+                                     id="{0:d}".format(i+1)).text \
+                        = "{0:d}, {1:d}, {2:d}"\
+                            .format(febio_faces[fc_sl].elems[i][5],
+                                    febio_faces[fc_sl].elems[i][6],
+                                    febio_faces[fc_sl].elems[i][7])
+
+    
     surface_xml = etree.SubElement(contact_xml, "surface", type="master")
     for i in range(len(Inde_bottom_tri3)):
         etree.SubElement(surface_xml, "tri3", id="{0:d}".format(i+1)).text = "{0:d}, {1:d}, {2:d}".format(Inde_bottom_tri3[i][5], Inde_bottom_tri3[i][6], Inde_bottom_tri3[i][7])
