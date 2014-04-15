@@ -172,35 +172,6 @@ def generate_febio_input( msh_file, id, sim_name, name, \
             febio_faces[fc].fix_disp_nodes=list(set(febio_faces[fc].fix_disp_nodes))
             febio_faces[fc].fix_disp_nodes.sort()
 
-    # get nodes on cell yx-plane (front) for axisymmetric constraints
-    for i in range(len(Cell_front_tri3)):
-        Cell_front_nodes.append(Cell_front_tri3[i][5])
-        Cell_front_nodes.append(Cell_front_tri3[i][6])
-        Cell_front_nodes.append(Cell_front_tri3[i][7])
-    # remove duplicates and sort
-    Cell_front_nodes=list(set(Cell_front_nodes))
-    Cell_front_nodes.sort()
-
-    # get nodes on indenter yx-plane (front) for axisymmetric constraints
-    for i in range(len(Inde_front_tri3)):
-        Inde_front_nodes.append(Inde_front_tri3[i][5])
-        Inde_front_nodes.append(Inde_front_tri3[i][6])
-        Inde_front_nodes.append(Inde_front_tri3[i][7])
-    # remove duplicates and sort
-    Inde_front_nodes=list(set(Inde_front_nodes))
-    Inde_front_nodes.sort()
-
-    # get nodes on cell bottom
-    for i in range(len(Cell_bottom_tri3)):
-        Cell_bottom_nodes.append(Cell_bottom_tri3[i][5])
-        Cell_bottom_nodes.append(Cell_bottom_tri3[i][6])
-        Cell_bottom_nodes.append(Cell_bottom_tri3[i][7])
-    # remove duplicates and sort
-    Cell_bottom_nodes=list(set(Cell_bottom_nodes))
-    Cell_bottom_nodes.sort()
-
-
-
     #####################################################################
     ##                Now write the .feb file                          ##
     #####################################################################
@@ -287,6 +258,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     for pt in range(len(febio_parts)):
         for i in range(len(febio_parts[pt].elems)):
             elem_id+=1;
+            febio_parts[pt].elems[i][0] = elem_id
             etree.SubElement(Elements_xml, febio_parts[pt].elem_type,
                              id="{0:d}".format(elem_id),
                              mat="{0:d}".format(febio_parts[pt].mat)).text \
@@ -296,22 +268,36 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                              febio_parts[pt].elems[i][7],
                              febio_parts[pt].elems[i][8] )
 
-    ### tri3: symmetry plane
-    for i in range(len(Symm_tri3)):
-        elem_id+=1;
-        Symm_tri3[i][0]=elem_id # fix element id
-        Symm_tri3[i][3]=1 # fix material id
-        etree.SubElement(Elements_xml, "tri3",
-                         id="{0:d}".format(Symm_tri3[i][0]),
-                         mat="{0:d}".format(Symm_tri3[i][3])).text = "{0:5d}, {1:5d}, {2:5d}".format(Symm_tri3[i][5], Symm_tri3[i][6], Symm_tri3[i][7])
+    ### Faces
+    for fc in range(len(febio_faces)):
+        # check if shell element
+        if febio_faces[fc].shell == 1:            
+            for i in range(len(febio_faces[fc].elems)):
+                elem_id+=1;
+                febio_faces[fc].elems[i][0] = elem_id
+                etree.SubElement(Elements_xml, febio_faces[fc].elem_type,
+                                 id="{0:d}".format(elem_id),
+                                 mat="{0:d}".format(febio_faces[fc].mat)).text \
+                = "{0:5d}, {1:5d}, {2:5d}" \
+                .format(febio_faces[fc].elems[i][5],
+                        febio_faces[fc].elems[i][6],
+                        febio_faces[fc].elems[i][7])
     
     ## ElementData
     ElementData_xml = etree.SubElement(Geometry_xml, "ElementData")
     
-    ### symmetry plane thickness = 0
-    for i in range(len(Symm_tri3)):
-        ElData_element_xml = etree.SubElement(ElementData_xml, "element", id="{0:d}".format(Symm_tri3[i][0]))
-        etree.SubElement(ElData_element_xml, "thickness").text = "0,0,0"
+    ### Shell element thickness
+    for fc in range(len(febio_faces)):
+        # check if shell element
+        if febio_faces[fc].shell == 1:    
+            for i in range(len(febio_faces[fc].elems)):
+                ElData_element_xml \
+                    = etree.SubElement(ElementData_xml,
+                                       "element",
+                                       id="{0:d}"\
+                                       .format(febio_faces[fc].elems[i][0]))
+                etree.SubElement(ElData_element_xml, "thickness").text \
+                    = febio_faces[fc].thickness
 
     # Boundary
     Boundary_xml = etree.SubElement(root, "Boundary")

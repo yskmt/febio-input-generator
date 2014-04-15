@@ -17,6 +17,7 @@ class febio_face:
         self.number = _number
         self.elems = []
         self.fix_disp = None
+        self.shell = 0
 
 class febio_edge:
     def __init__(self, _name, _number):
@@ -81,6 +82,11 @@ febio_parts = [Cell_tet4, Inde_tet4]
 
 ### Faces
 Symm_tri3 = febio_face('Symm_tri3', 101)
+Symm_tri3.shell = 1
+Symm_tri3.elem_type = 'tri3'
+Symm_tri3.mat = 1
+Symm_tri3.thickness = '0,0,0'
+
 Cell_front_tri3 = febio_face('Cell_front_tri3', 4)
 Cell_front_tri3.fix_disp = 'z'
 Cell_back_tri3 = febio_face('Cell_back_tri3', 5)
