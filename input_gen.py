@@ -1,31 +1,11 @@
 from subprocess import call
 from lxml import etree
 import numpy as np
-
-class febio_part:
-    name = ''
-    number = 0
-
-class febio_face:
-    name = ''
-    number = 0
-
-class febio_edge:
-    def __init__(self, _name, _number):
-        self.name = _name
-        self.number = _number
-    name = ''
-    number = 0
-    elems = []
-    fix_disp = None
-
-class febio_node:
-    name = ''
-    number = 0
+import pdb
 
 ##### simulation
 def generate_febio_input( msh_file, id, sim_name, name, \
-                          febio_edges,
+                          febio_edges, febio_parts, \
                           indent_1, indent_2, \
                           time_steps, min_dtmax,\
                           phi0, density, \
@@ -54,7 +34,6 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     elem_end = -1
 
     Nodes = []
-    Cell_tet4 = []
     Cell_bottom_nodes = []
     Cell_bottom_tri3 = []
     Cell_top_tri3 = []
@@ -63,7 +42,6 @@ def generate_febio_input( msh_file, id, sim_name, name, \
 
     Symm_tri3 = []
 
-    Inde_tet4 = []
     Inde_top_tri3 = []
     Inde_bottom_tri3 = []
     Inde_front_tri3 = []
@@ -122,12 +100,9 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                 elem_info.append(int(elem_list[6]))
                 elem_info.append(int(elem_list[7]))
                 elem_info.append(int(elem_list[8]))
-                # cell
-                if  (elem_info[3]==1):
-                    Cell_tet4.append(elem_info)
-                # indenter
-                elif (elem_info[3]==202):
-                    Inde_tet4.append(elem_info)
+                for pt in range(len(febio_parts)):
+                    if elem_info[3]==febio_parts[pt].number:
+                        febio_parts[pt].elems.append(elem_info)
 
             # tri3 elements
             if (elem_info[1] == 2):
@@ -177,22 +152,6 @@ def generate_febio_input( msh_file, id, sim_name, name, \
             # remove duplicates and sort
             febio_edges[ed].fix_disp_nodes=list(set(febio_edges[ed].fix_disp_nodes))
             febio_edges[ed].fix_disp_nodes.sort()            
-
-    # # collect and order the cell axis nodes
-    # for i in range(len(Cell_line)):
-    #     Cell_axis_nodes.append(Cell_line[i][5])
-    #     Cell_axis_nodes.append(Cell_line[i][6])
-    # # remove duplicates and sort
-    # Cell_axis_nodes=list(set(Cell_axis_nodes))
-    # Cell_axis_nodes.sort()
-
-    # # collect and order the indenter axis nodes
-    # for i in range(len(Inde_line)):
-    #     Inde_axis_nodes.append(Inde_line[i][5])
-    #     Inde_axis_nodes.append(Inde_line[i][6])
-    # # remove duplicates and sort
-    # Inde_axis_nodes=list(set(Inde_axis_nodes))
-    # Inde_axis_nodes.sort()
 
     # get nodes on cell yx-plane (front) for axisymmetric constraints
     for i in range(len(Cell_front_tri3)):
@@ -303,30 +262,27 @@ def generate_febio_input( msh_file, id, sim_name, name, \
 
     ## Elements
     Elements_xml = etree.SubElement(Geometry_xml, "Elements")
-    elem_id = 1
+    elem_id = 0
 
-    ### tet4: cell
-    for i in range(len(Cell_tet4)):
-        Cell_tet4[i][0]=elem_id # fix element id
-        elem_id+=1;
-        Cell_tet4[i][3]=3 # fix material id
-        etree.SubElement(Elements_xml, "tet4",
-                         id="{0:d}".format(Cell_tet4[i][0]),
-                         mat="{0:d}".format(Cell_tet4[i][3])).text = "{0:5d}, {1:5d}, {2:5d}, {3:5d}".format(Cell_tet4[i][5], Cell_tet4[i][6], Cell_tet4[i][7], Cell_tet4[i][8])
-    
-    ### tet4: indenter
-    for i in range(len(Inde_tet4)):
-        Inde_tet4[i][0]=elem_id # fix element id
-        elem_id+=1;
-        Inde_tet4[i][3]=2 # fix material id
-        etree.SubElement(Elements_xml, "tet4",
-                         id="{0:d}".format(Inde_tet4[i][0]),
-                         mat="{0:d}".format(Inde_tet4[i][3])).text = "{0:5d}, {1:5d}, {2:5d}, {3:5d}".format(Inde_tet4[i][5], Inde_tet4[i][6], Inde_tet4[i][7], Inde_tet4[i][8])
+    pdb.set_trace()
+
+    ### Parts
+    for pt in range(len(febio_parts)):
+        for i in range(len(febio_parts[pt].elems)):
+            elem_id+=1;
+            etree.SubElement(Elements_xml, febio_parts[pt].elem_type,
+                             id="{0:d}".format(elem_id),
+                             mat="{0:d}".format(febio_parts[pt].mat)).text \
+                = "{0:5d}, {1:5d}, {2:5d}, {3:5d}"\
+                    .format( febio_parts[pt].elems[i][5],
+                             febio_parts[pt].elems[i][6],
+                             febio_parts[pt].elems[i][7],
+                             febio_parts[pt].elems[i][8] )
 
     ### tri3: symmetry plane
     for i in range(len(Symm_tri3)):
-        Symm_tri3[i][0]=elem_id # fix element id
         elem_id+=1;
+        Symm_tri3[i][0]=elem_id # fix element id
         Symm_tri3[i][3]=1 # fix material id
         etree.SubElement(Elements_xml, "tri3",
                          id="{0:d}".format(Symm_tri3[i][0]),
