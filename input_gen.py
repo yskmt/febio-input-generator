@@ -4,7 +4,7 @@ import numpy as np
 import pdb
 
 ##### simulation
-def generate_febio_input( msh_file, sim_id, sim_name, \
+def generate_febio_input( msh_file, output_file, sim_id, sim_name, \
                           febio_edges, febio_parts, febio_faces, \
                           febio_mats, febio_rigids, \
                           febio_outputs, febio_steps, \
@@ -16,7 +16,7 @@ def generate_febio_input( msh_file, sim_id, sim_name, \
 
     # output
     call(["mkdir", "-p", sim_name])
-    f = open('{0:s}/cell_{0:s}_{1:d}.feb'.format(sim_name,sim_id), 'w')
+    f = open(output_file, 'w')
 
     # scale
     sc = 1e-6
