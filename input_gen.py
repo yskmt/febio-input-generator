@@ -4,17 +4,12 @@ import numpy as np
 import pdb
 
 ##### simulation
-def generate_febio_input( msh_file, id, sim_name, name, \
+def generate_febio_input( msh_file, sim_id, sim_name, \
                           febio_edges, febio_parts, febio_faces, \
                           febio_mats, febio_rigids, \
+                          febio_outputs, 
                           indent_1, indent_2, \
                           time_steps, min_dtmax,\
-                          phi0, density, \
-                          c1, c2, k, \
-                          ksi, beta, \
-                          g1, t1, \
-                          perm, \
-                          sliding_penalty\
 ):
     
     f = open(msh_file)
@@ -23,7 +18,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
 
     # output
     call(["mkdir", "-p", sim_name])
-    f = open('{0:s}/cell_{0:s}_{1:d}.feb'.format(sim_name,id), 'w')
+    f = open('{0:s}/cell_{0:s}_{1:d}.feb'.format(sim_name,sim_id), 'w')
 
     # scale
     sc = 1e-6
@@ -331,22 +326,22 @@ def generate_febio_input( msh_file, id, sim_name, name, \
 
     # Output
     Output_xml = etree.SubElement(root, "Output")
-    plotfile_xml = etree.SubElement(Output_xml, "plotfile", type="febio")
-    etree.SubElement(plotfile_xml, "var", type="displacement")
-    etree.SubElement(plotfile_xml, "var", type="velocity")
-    etree.SubElement(plotfile_xml, "var", type="effective fluid pressure")
-    etree.SubElement(plotfile_xml, "var", type="fluid flux")
-    etree.SubElement(plotfile_xml, "var", type="stress")
-    etree.SubElement(plotfile_xml, "var", type="relative volume")
-    # etree.SubElement(plotfile_xml, "var", type="fiber vector")
+    
+    plot_outputs = febio_outputs.children[0]
+    log_outputs = febio_outputs.children[1]
 
-    ## Log
-    logfile_xml = etree.SubElement(Output_xml, "logfile", file="{0:s}/cell_{0:s}_{1:d}.log".format(sim_name,id))
-    nodefile = "{0:s}/disp_{0:s}_{1:d}.txt".format(sim_name,id)
-    etree.SubElement(logfile_xml, "node_data", file=nodefile, name="front tip displacement", data="uy").text = "2"
-    fzfile = "{0:s}/fz_{0:s}_{1:d}.txt".format(sim_name,id)
-    etree.SubElement(logfile_xml, "rigid_body_data", file=fzfile, data="Fy").text = "2"
-
+    ## Plotfile
+    plotfile_xml = etree.SubElement(Output_xml, plot_outputs.name,
+                                    type=plot_outputs.attributes['type'])
+    for i in range(len(plot_outputs.output_types)):
+        etree.SubElement(plotfile_xml, "var", type=plot_outputs.output_types[i])
+    
+    ## Logfile
+    logfile_xml = etree.SubElement(Output_xml, log_outputs.name, file=log_outputs.attributes['file'])
+    for chil in log_outputs.children:
+        etree.SubElement(logfile_xml, chil.name, file=chil.attributes['file'],
+                         data=chil.attributes['data']).text = chil.attributes['text']
+    
     # Step01
     Step_xml = etree.SubElement(root, "Step", name="Step01")
     etree.SubElement(Step_xml, "Module", type="biphasic")

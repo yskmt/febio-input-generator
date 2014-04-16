@@ -57,7 +57,7 @@ perm = 1.0e-17 # -7
 sliding_penalty = 10
 
 #### write the simulation files
-id = 1
+sim_id = 1
 msh_file = "cell.msh"
 
 
@@ -151,20 +151,50 @@ febio_faces = [Symm_tri3, Cell_front_tri3, Cell_back_tri3, Cell_top_tri3, Cell_b
 febio_mats = [Symm_tri3, Inde_tet4, Cell_tet4]
 febio_rigids = [Symm_tri3, Inde_tet4]
 
+## outputs
+
+output_types = ['displacement', 'velocity', 'effective fluid pressure', 'fluid flux', 'stress', 'relative volume']
+nodefile = '"node_data", file="nodefilename", name="y-displacement", data="uy"'
+fzfile = '"rigid_body_data", file="fzfilename", name="y-reaction force", data="Fy"'
+outputs = {'"plotfile", type="febio"':[output_types],
+           '"logfile", file="logfilename"':{nodefile:2, fzfile:2}}
+
+
+class Tree:
+    def __init__(self, _name):
+        self.attributes = {}
+        self.name = _name
+        self.children = []
+
+plot_outputs = Tree('plotfile')
+plot_outputs.attributes = {'type':'febio'}
+plot_outputs.output_types = ['displacement', 'velocity', 'effective fluid pressure', 'fluid flux', 'stress', 'relative volume']
+
+log_outputs = Tree('logfile')
+log_outputs.attributes = {'file':'{0:s}/logfile.txt'.format(sim_name)}
+
+node_outputs = Tree('node_data')
+node_outputs.attributes = {'file':'{0:s}/ndfile.txt'.format(sim_name),
+                           'data':'uy', 'text':'2'}
+
+rigid_outputs = Tree('rigid_body_data')
+rigid_outputs.attributes = {'file':'{0:s}/fzfile.txt'.format(sim_name),
+                            'data':'Fy', 'text':'2'}
+
+log_outputs.children = [node_outputs, rigid_outputs]
+
+febio_outputs = Tree
+febio_outputs.children = [plot_outputs, log_outputs]
+
 
 print "writing simulation {0:d}".format(id)
 print "{0:s}/cell_{0:s}_{1:d}.feb".format(sim_name,id)
-input_gen.generate_febio_input(msh_file, id, sim_name, name, \
+input_gen.generate_febio_input(msh_file, sim_id, sim_name, \
                                febio_edges, febio_parts, febio_faces, \
                                febio_mats, febio_rigids, \
+                               febio_outputs, \
                                indent_1, indent_2, \
                                time_steps, min_dtmax,\
-                               phi0, density, \
-                               c1, c2, k, \
-                               ksi, beta, \
-                               g1, t1, \
-                               perm, \
-                               sliding_penalty\
 )
 
 #### Run the simulation
