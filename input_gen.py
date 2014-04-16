@@ -360,42 +360,6 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                             .format(febio_faces[fc_sl].elems[i][5],
                                     febio_faces[fc_sl].elems[i][6],
                                     febio_faces[fc_sl].elems[i][7])
-
-    
-    # surface_xml = etree.SubElement(contact_xml, "surface", type="master")
-    # for i in range(len(Inde_bottom_tri3)):
-    #     etree.SubElement(surface_xml, "tri3", id="{0:d}".format(i+1)).text = "{0:d}, {1:d}, {2:d}".format(Inde_bottom_tri3[i][5], Inde_bottom_tri3[i][6], Inde_bottom_tri3[i][7])
-
-    # ### contact slave surface
-    # surface_xml = etree.SubElement(contact_xml, "surface", type="slave")
-    # for i in range(len(Cell_top_tri3)):
-    #     etree.SubElement(surface_xml, "tri3", id="{0:d}".format(i+1)).text = "{0:d}, {1:d}, {2:d}".format(Cell_top_tri3[i][5], Cell_top_tri3[i][6], Cell_top_tri3[i][7])
-
-    ## contact boundary: cell-symmetry plane
-    contact_xml = etree.SubElement(Boundary_xml, "contact", type="sliding-tension-compression")
-    etree.SubElement(contact_xml, "laugon").text = "0"
-    etree.SubElement(contact_xml, "tolerance").text = "0.2"
-    etree.SubElement(contact_xml, "gaptol").text = "0"
-    etree.SubElement(contact_xml, "penalty").text = "1000"
-    etree.SubElement(contact_xml, "auto_penalty").text = "1"
-    etree.SubElement(contact_xml, "two_pass").text = "0"
-    etree.SubElement(contact_xml, "search_tol").text = "0.01"
-    etree.SubElement(contact_xml, "symmetric_stiffness").text = "0"
-    etree.SubElement(contact_xml, "search_radius").text = "1"
-    etree.SubElement(contact_xml, "seg_up").text = "0"
-    etree.SubElement(contact_xml, "tension").text = "1"
-    etree.SubElement(contact_xml, "minaug").text = "0"
-    etree.SubElement(contact_xml, "maxaug").text = "10"
-
-    ### contact master surface
-    surface_xml = etree.SubElement(contact_xml, "surface", type="master")
-    for i in range(len(Symm_tri3)):
-        etree.SubElement(surface_xml, "tri3", id="{0:d}".format(i+1)).text = "{0:d}, {1:d}, {2:d}".format(Symm_tri3[i][5], Symm_tri3[i][6], Symm_tri3[i][7])
-
-    #### contact slave surface
-    surface_xml = etree.SubElement(contact_xml, "surface", type="slave")
-    for i in range(len(Cell_back_tri3)):
-        etree.SubElement(surface_xml, "tri3", id="{0:d}".format(i+1)).text = "{0:d}, {1:d}, {2:d}".format(Cell_back_tri3[i][5], Cell_back_tri3[i][6], Cell_back_tri3[i][7])
     
     # Constraints
     Constraints_xml = etree.SubElement(root, "Constraints")

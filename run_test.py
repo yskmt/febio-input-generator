@@ -86,10 +86,19 @@ Symm_tri3.shell = 1
 Symm_tri3.elem_type = 'tri3'
 Symm_tri3.mat = 1
 Symm_tri3.thickness = '0,0,0'
+Symm_tri3.slave = [5]
+Symm_tri3.contact_type = 'sliding-tension-compression'
+Symm_tri3.contact_attributes = {"laugon":"0", "tolerance":"0.2", "gaptol":"0",
+                                "penalty":"1000", "auto_penalty":"1", "two_pass":"0",
+                                "search_tol":"0.01", "symmetric_stiffness":"0",
+                                "search_radius":"1", "seg_up":"0", "tension":"1",
+                                "minaug":"0", "maxaug":"10"}
 
 Cell_front_tri3 = febio_face('Cell_front_tri3', 4)
 Cell_front_tri3.fix_disp = 'z'
+
 Cell_back_tri3 = febio_face('Cell_back_tri3', 5)
+Cell_back_tri3.elem_type = 'tri3'
 
 Cell_top_tri3 = febio_face('Cell_top_tri3', 2)
 Cell_top_tri3.elem_type = 'tri3'
@@ -107,10 +116,9 @@ Inde_bottom_tri3 = febio_face('Inde_bottom_tri3', 203)
 Inde_bottom_tri3.elem_type = 'tri3'
 Inde_bottom_tri3.slave = [2]
 Inde_bottom_tri3.contact_type = 'facet-to-facet sliding'
-inde_cell_contact = { 'two_pass':0, 'auto_penalty':1, 'fric_coeff':0,
-                      'fric_penalty':0, 'search_tol':0.01, 'minaug':0,
-                      'maxaug':10, 'gaptol':0, 'seg_up':0}
-Inde_bottom_tri3.contact_attributes = inde_cell_contact
+Inde_bottom_tri3.contact_attributes = {'two_pass':0, 'auto_penalty':1, 'fric_coeff':0,
+                                       'fric_penalty':0, 'search_tol':0.01, 'minaug':0,
+                                       'maxaug':10, 'gaptol':0, 'seg_up':0}
 
 febio_faces = [Symm_tri3, Cell_front_tri3, Cell_back_tri3, Cell_top_tri3, Cell_bottom_tri3, Inde_front_tri3, Inde_back_tri3, Inde_top_tri3, Inde_bottom_tri3]
 
