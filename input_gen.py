@@ -34,21 +34,6 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     elem_end = -1
 
     Nodes = []
-    Cell_bottom_nodes = []
-    Cell_bottom_tri3 = []
-    Cell_top_tri3 = []
-    Cell_front_tri3 = []
-    Cell_back_tri3 = []
-
-    Symm_tri3 = []
-
-    Inde_top_tri3 = []
-    Inde_bottom_tri3 = []
-    Inde_front_tri3 = []
-    Inde_back_tri3 = []
-
-    Cell_front_nodes = []
-    Inde_front_nodes = []
 
 
     for i in range(len_file):
@@ -86,7 +71,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
             elem_info.append(int(elem_list[3]))        
             elem_info.append(int(elem_list[4]))
 
-            # 2-node lines
+            # edges
             if elem_info[1] == 1:
                 elem_info.append(int(elem_list[5]))
                 elem_info.append(int(elem_list[6]))
@@ -94,7 +79,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                     if elem_info[3]==febio_edges[ed].number:
                         febio_edges[ed].elems.append(elem_info)
 
-            # tet4 elements
+            # parts
             if (elem_info[1] == 4):
                 elem_info.append(int(elem_list[5]))
                 elem_info.append(int(elem_list[6]))
@@ -104,7 +89,7 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                     if elem_info[3]==febio_parts[pt].number:
                         febio_parts[pt].elems.append(elem_info)
 
-            # tri3 elements
+            # faces
             if (elem_info[1] == 2):
                 elem_info.append(int(elem_list[5]))
                 elem_info.append(int(elem_list[6]))
@@ -112,38 +97,9 @@ def generate_febio_input( msh_file, id, sim_name, name, \
                 for fc in range(len(febio_faces)):
                     if elem_info[3]==febio_faces[fc].number:
                         febio_faces[fc].elems.append(elem_info)
-                        
-                # symmetry plane
-                if (elem_info[3] == 101):
-                    Symm_tri3.append(elem_info)
-                # cell front (on yx-plane)
-                elif (elem_info[3]==4):
-                    Cell_front_tri3.append(elem_info)
-                # cell back
-                elif (elem_info[3]==5):
-                    Cell_back_tri3.append(elem_info)
-                # cell top
-                elif (elem_info[3]==2):
-                    Cell_top_tri3.append(elem_info)
-                # cell bottom
-                elif (elem_info[3]==3):
-                    Cell_bottom_tri3.append(elem_info)
-
-                # indenter front (on yx-plane)
-                elif (elem_info[3]==204):
-                    Inde_front_tri3.append(elem_info)
-                # indenter back
-                elif (elem_info[3]==205):
-                    Inde_back_tri3.append(elem_info)
-                # indenter top
-                elif (elem_info[3]==202):
-                    Inde_top_tri3.append(elem_info)
-                # indenter bottom
-                elif (elem_info[3]==203):
-                    Inde_bottom_tri3.append(elem_info)
 
 
-    # Collect the cell axis nodes for fixed displacement condition
+    # Collect the edge nodes for fixed displacement condition
     for ed in range(len(febio_edges)):
         if febio_edges[ed].fix_disp != None:
             # Add fix_disp_nodes member
