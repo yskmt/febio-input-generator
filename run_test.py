@@ -106,7 +106,11 @@ Inde_top_tri3 = febio_face('Inde_top_tri3', 202)
 Inde_bottom_tri3 = febio_face('Inde_bottom_tri3', 203)
 Inde_bottom_tri3.elem_type = 'tri3'
 Inde_bottom_tri3.slave = [2]
-
+Inde_bottom_tri3.contact_type = 'facet-to-facet sliding'
+inde_cell_contact = { 'two_pass':0, 'auto_penalty':1, 'fric_coeff':0,
+                      'fric_penalty':0, 'search_tol':0.01, 'minaug':0,
+                      'maxaug':10, 'gaptol':0, 'seg_up':0}
+Inde_bottom_tri3.contact_attributes = inde_cell_contact
 
 febio_faces = [Symm_tri3, Cell_front_tri3, Cell_back_tri3, Cell_top_tri3, Cell_bottom_tri3, Inde_front_tri3, Inde_back_tri3, Inde_top_tri3, Inde_bottom_tri3]
 
