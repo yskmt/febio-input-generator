@@ -6,6 +6,7 @@ import pdb
 ##### simulation
 def generate_febio_input( msh_file, id, sim_name, name, \
                           febio_edges, febio_parts, febio_faces, \
+                          febio_mats, febio_rigids, \
                           indent_1, indent_2, \
                           time_steps, min_dtmax,\
                           phi0, density, \
@@ -147,56 +148,33 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     # Material
     Material_xml = etree.SubElement(root, "Material")
 
-    ## symmetry plane
-    material_xml = etree.SubElement(Material_xml, "material", id = "1", name = "symmetry plane", type = "rigid body")
-    etree.SubElement(material_xml, "density").text = "1"
-    etree.SubElement(material_xml, "center_of_mass").text = "0,0,0"
+    for mt in range(len(febio_mats)):
+        material_xml = etree.SubElement(Material_xml, "material",
+                                        id = str(febio_mats[mt].mat),
+                                        name = febio_mats[mt].name,
+                                        type = febio_mats[mt].mat_type)
 
-    ## indenter
-    material_xml = etree.SubElement(Material_xml, "material", id = "2", name = "indenter", type = "rigid body")
-    etree.SubElement(material_xml, "density").text = "1"
-    etree.SubElement(material_xml, "center_of_mass").text = "1,1.8,0"
+        for atr in febio_mats[mt].mat_attributes.keys():
+            if type(febio_mats[mt].mat_attributes[atr])==dict:
+                solid_xml = etree.SubElement(material_xml, atr,\
+                                             type=str(febio_mats[mt].mat_attributes[atr]['type']))
 
-    ## cell
-    material_xml = etree.SubElement(Material_xml, "material", id = "3", name = "cell", type = "biphasic")
-    etree.SubElement(material_xml, "phi0").text = "{0:9.7e}".format(phi0)
+                for atr2 in febio_mats[mt].mat_attributes[atr].keys():
+                    if type(febio_mats[mt].mat_attributes[atr][atr2])==dict:
 
-    ### uncoupled viscoelastic
-    solid_xml = etree.SubElement(material_xml, "solid", type="uncoupled viscoelastic")
-    etree.SubElement(solid_xml, "g1").text = "{0:9.7e}".format(g1)
-    etree.SubElement(solid_xml, "g2").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "g3").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "g4").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "g5").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "g6").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "t1").text = "{0:9.7e}".format(t1)
-    etree.SubElement(solid_xml, "t2").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "t3").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "t4").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "t5").text = "{0:9.7e}".format(0.0)
-    etree.SubElement(solid_xml, "t6").text = "{0:9.7e}".format(0.0)
+                        elastic_xml = etree.SubElement(solid_xml, atr2, \
+                                                       type=str(febio_mats[mt].mat_attributes[atr][atr2]['type']))
+                    
+                        for atr3 in febio_mats[mt].mat_attributes[atr][atr2].keys():
+                            if atr3 != 'type':
+                                etree.SubElement(elastic_xml, atr3).text = str(febio_mats[mt].mat_attributes[atr][atr2][atr3])
 
-    ##### elastic part of viscoelastic
-    elastic_xml = etree.SubElement(solid_xml, "elastic", type="Mooney-Rivlin")
-    etree.SubElement(elastic_xml, "c1").text = "{0:9.7e}".format(c1)
-    etree.SubElement(elastic_xml, "c2").text = "{0:9.7e}".format(c2)
-    etree.SubElement(elastic_xml, "k").text = "{0:9.7e}".format(k)
-
-    #### permeability
-    permeability_xml = etree.SubElement(material_xml, "permeability", type="perm-const-iso")
-    etree.SubElement(permeability_xml, "perm").text = "{0:9.7e}".format(perm)
-
-    # poroelastic
-    #     f.write("""\t\t\t<solid type="neo-Hookean">
-    # \t\t\t\t<density>1</density>
-    # \t\t\t\t<E>{0:e}</E>
-    # \t\t\t\t<v>{1:e}</v>
-    # \t\t\t</solid>
-    # \t\t\t<permeability type="perm-const-iso">
-    # \t\t\t\t<perm>{2:e}</perm>
-    # \t\t\t</permeability>
-    # \t\t</material>
-    # \t</Material>""".format(c1, c2, perm))
+                    elif atr2 != 'type':
+                        etree.SubElement(solid_xml, atr2).text \
+                            =str(febio_mats[mt].mat_attributes[atr][atr2])
+            else:
+                etree.SubElement(material_xml, atr).text \
+                    = str(febio_mats[mt].mat_attributes[atr])
 
     # Geometry
     Geometry_xml = etree.SubElement(root, "Geometry")
@@ -319,29 +297,22 @@ def generate_febio_input( msh_file, id, sim_name, name, \
     
     # Constraints
     Constraints_xml = etree.SubElement(root, "Constraints")
-    
-    ## rigid body: symmetry plane
-    rigid_body_xml = etree.SubElement(Constraints_xml, "rigid_body", mat="1")
-    etree.SubElement(rigid_body_xml, "trans_x", type="fixed")
-    etree.SubElement(rigid_body_xml, "trans_y", type="fixed")
-    etree.SubElement(rigid_body_xml, "trans_z", type="fixed")
-    etree.SubElement(rigid_body_xml, "rot_x", type="fixed")
-    etree.SubElement(rigid_body_xml, "rot_y", type="fixed")
-    etree.SubElement(rigid_body_xml, "rot_z", type="fixed")
 
-    ### rigid body: indenter
-    rigid_body_xml = etree.SubElement(Constraints_xml, "rigid_body", mat="2")
-    etree.SubElement(rigid_body_xml, "trans_x", type="fixed")
-    # indenter moves in y-direction
-    # etree.SubElement(rigid_body_xml, "trans_y", type="fixed")
-    etree.SubElement(rigid_body_xml, "trans_z", type="fixed")
-    etree.SubElement(rigid_body_xml, "rot_x", type="fixed")
-    etree.SubElement(rigid_body_xml, "rot_y", type="fixed")
-    etree.SubElement(rigid_body_xml, "rot_z", type="fixed")
+    for rg in range(len(febio_rigids)):
+        rigid_body_xml = etree.SubElement(Constraints_xml, "rigid_body", mat=str(febio_rigids[rg].mat))
 
-    rigid_body_xml = etree.SubElement(Constraints_xml, "rigid_body", mat="2")
-    # indenter moves in y-direction
-    etree.SubElement(rigid_body_xml, "trans_y", type="prescribed", lc="2").text = "1"
+        for cst in febio_rigids[rg].rigid_constraints.keys():
+            
+            # prescribed
+            if type(febio_rigids[rg].rigid_constraints[cst])==list:
+                etree.SubElement(rigid_body_xml, cst,
+                                 type=str(febio_rigids[rg].rigid_constraints[cst][0]),
+                                 lc=str(febio_rigids[rg].rigid_constraints[cst][1])).text = str(febio_rigids[rg].rigid_constraints[cst][2])
+
+            # fixed
+            else:
+                etree.SubElement(rigid_body_xml, cst,
+                                 type=str(febio_rigids[rg].rigid_constraints[cst]))
 
     # Load Data
     LoadData_xml = etree.SubElement(root, "LoadData")
