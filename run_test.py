@@ -2,34 +2,7 @@ import input_gen
 reload(input_gen)
 from subprocess import call
 import os.path
-
-
-class febio_part:
-    def __init__(self, _name, _number):
-        self.name = _name
-        self.number = _number
-        self.elems = []
-        self.fix_disp = None
-
-class febio_face:
-    def __init__(self, _name, _number):
-        self.name = _name
-        self.number = _number
-        self.elems = []
-        self.fix_disp = None
-        self.shell = 0
-
-class febio_edge:
-    def __init__(self, _name, _number):
-        self.name = _name
-        self.number = _number
-        self.elems = []
-        self.fix_disp = None
-
-class febio_node:
-    def __init__(self, _name, _number):
-        self.name = _name
-        self.number = _number
+from febio_data_structures import *
 
 id=1;
 sim_name = "test" 
@@ -54,13 +27,13 @@ t1 = 1
 
 perm = 1.0e-17 # -7
 
-sliding_penalty = 10
+
+
+
 
 #### write the simulation files
 sim_id = 1
 msh_file = "cell.msh"
-
-
 
 #### simulation specifications
 
@@ -143,7 +116,6 @@ Inde_bottom_tri3.contact_attributes = {'two_pass':0, 'auto_penalty':1, 'fric_coe
                                        'fric_penalty':0, 'search_tol':0.01, 'minaug':0,
                                        'maxaug':10, 'gaptol':0, 'seg_up':0}
 
-
 ## define FEM system
 febio_edges = [Cell_line, Inde_line]
 febio_parts = [Cell_tet4, Inde_tet4]
@@ -158,13 +130,6 @@ nodefile = '"node_data", file="nodefilename", name="y-displacement", data="uy"'
 fzfile = '"rigid_body_data", file="fzfilename", name="y-reaction force", data="Fy"'
 outputs = {'"plotfile", type="febio"':[output_types],
            '"logfile", file="logfilename"':{nodefile:2, fzfile:2}}
-
-
-class Tree:
-    def __init__(self, _name):
-        self.attributes = {}
-        self.name = _name
-        self.children = []
 
 plot_outputs = Tree('plotfile')
 plot_outputs.attributes = {'type':'febio'}
@@ -187,15 +152,32 @@ febio_outputs = Tree
 febio_outputs.children = [plot_outputs, log_outputs]
 
 
+step01 = febio_step('Step01')
+step01.module = 'biphasic'
+step01.control = {"time_steps":"{0:d}".format(time_steps),
+                  "step_size":"0.001", "max_refs":"15", "max_ups":"10",
+                  "dtol":"0.001", "etol":"0.01", "rtol":"0", "ptol":"0.01",
+                  "lstol":"0.9", "plot_level":"PLOT_MUST_POINTS",
+                  "print_level":"PRINT_MAJOR_ITRS"}
+step01.time_stepper = {'dtmin':0.01, 'dtmax':'lc=1', 'max_retries':10, 'opt_iter':10}
+
+febio_steps = [step01]
+
+## loadcurves
+lc1 = febio_loadcurve(1, 'linear', 'constant')
+lc2 = febio_loadcurve(2, 'linear', 'constant')
+lc1.loadpoints = [(t, min_dtmax*10) for t in np.linspace(0.0,110.0,111)]
+lc2.loadpoints = [(0,0), (1.0, indent_1), (3.5, indent_2)]
+
+febio_lcs = [lc1, lc2]
+
 print "writing simulation {0:d}".format(id)
 print "{0:s}/cell_{0:s}_{1:d}.feb".format(sim_name,id)
 input_gen.generate_febio_input(msh_file, sim_id, sim_name, \
                                febio_edges, febio_parts, febio_faces, \
                                febio_mats, febio_rigids, \
-                               febio_outputs, \
-                               indent_1, indent_2, \
-                               time_steps, min_dtmax,\
-)
+                               febio_outputs, febio_steps, \
+                               febio_lcs )
 
 #### Run the simulation
 FEBio = "febio"

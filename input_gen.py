@@ -7,10 +7,8 @@ import pdb
 def generate_febio_input( msh_file, sim_id, sim_name, \
                           febio_edges, febio_parts, febio_faces, \
                           febio_mats, febio_rigids, \
-                          febio_outputs, 
-                          indent_1, indent_2, \
-                          time_steps, min_dtmax,\
-):
+                          febio_outputs, febio_steps, \
+                          febio_lcs ):
     
     f = open(msh_file)
     content = f.readlines()
@@ -311,19 +309,15 @@ def generate_febio_input( msh_file, sim_id, sim_name, \
 
     # Load Data
     LoadData_xml = etree.SubElement(root, "LoadData")
-    
-    ### saving step
-    loadcurve_xml = etree.SubElement(LoadData_xml, "loadcurve", id="1", type="linear", extend="constant") 
-    savetime = np.linspace(0.0,110.0,111)
-    for i in range(len(savetime)):
-        etree.SubElement(loadcurve_xml, "loadpoint").text = "{0:e}, {1:e}".format(savetime[i], min_dtmax*10)
 
-    ### indenter y-direction movement
-    loadcurve_xml = etree.SubElement(LoadData_xml, "loadcurve", id="2", type="smooth")
-    etree.SubElement(loadcurve_xml, "loadpoint").text = "0, 0"
-    etree.SubElement(loadcurve_xml, "loadpoint").text = "1.0, {0:9.7e}".format(indent_1)
-    etree.SubElement(loadcurve_xml, "loadpoint").text = "3.5, {0:9.7e}".format(indent_2)
-
+    for loadcurve in febio_lcs:
+        loadcurve_xml = etree.SubElement(LoadData_xml, "loadcurve",
+                                         id=str(loadcurve.id),
+                                         type=loadcurve.type,
+                                         extend=loadcurve.extend)
+        for lpts in loadcurve.loadpoints:
+            etree.SubElement(loadcurve_xml, "loadpoint").text = "{0:e}, {1:e}".format(lpts[0], lpts[1])
+        
     # Output
     Output_xml = etree.SubElement(root, "Output")
     
@@ -341,28 +335,26 @@ def generate_febio_input( msh_file, sim_id, sim_name, \
     for chil in log_outputs.children:
         etree.SubElement(logfile_xml, chil.name, file=chil.attributes['file'],
                          data=chil.attributes['data']).text = chil.attributes['text']
-    
-    # Step01
-    Step_xml = etree.SubElement(root, "Step", name="Step01")
-    etree.SubElement(Step_xml, "Module", type="biphasic")
-    Control_xml = etree.SubElement(Step_xml, "Control")
 
-    etree.SubElement(Control_xml, "time_steps").text = "{0:d}".format(time_steps)
-    etree.SubElement(Control_xml, "step_size").text = "0.001"
-    etree.SubElement(Control_xml, "max_refs").text = "15"
-    etree.SubElement(Control_xml, "max_ups").text = "10"
-    etree.SubElement(Control_xml, "dtol").text = "0.001"
-    etree.SubElement(Control_xml, "etol").text = "0.01"
-    etree.SubElement(Control_xml, "rtol").text = "0"
-    etree.SubElement(Control_xml, "ptol").text = "0.01"
-    etree.SubElement(Control_xml, "lstol").text = "0.9"
-    time_stepper_xml = etree.SubElement(Control_xml, "time_stepper")
-    etree.SubElement(time_stepper_xml, "dtmin").text = "0.01"
-    etree.SubElement(time_stepper_xml, "dtmax", lc="1")
-    etree.SubElement(time_stepper_xml, "max_retries").text = "10"
-    etree.SubElement(time_stepper_xml, "opt_iter").text = "10"
-    etree.SubElement(Control_xml, "plot_level").text = "PLOT_MUST_POINTS"
-    etree.SubElement(Control_xml, "print_level").text = "PRINT_MAJOR_ITRS"
+    # Steps
+    for stp in range(len(febio_steps)):
+        Step_xml = etree.SubElement(root, "Step", name=febio_steps[stp].name)
+        etree.SubElement(Step_xml, "Module", type=febio_steps[stp].module)
+
+        Control_xml = etree.SubElement(Step_xml, "Control")
+        
+        for atr in febio_steps[stp].control.keys():
+            etree.SubElement(Control_xml, atr).text = str(febio_steps[stp].control[atr])
+
+        if hasattr(febio_steps[stp], 'time_stepper'):
+            time_stepper_xml = etree.SubElement(Control_xml, "time_stepper")
+            for atr2 in febio_steps[stp].time_stepper.keys():
+                if 'lc' in str(febio_steps[stp].time_stepper[atr2]):
+                    etree.SubElement(time_stepper_xml, atr2, \
+                                     lc=febio_steps[stp].time_stepper[atr2].split('=')[1]).text      
+                else:
+                    etree.SubElement(time_stepper_xml, atr2).text \
+                        = str(febio_steps[stp].time_stepper[atr2])
 
     ## Loads
     # Loads_xml = etree.SubElement(Step_xml, "Loads")
